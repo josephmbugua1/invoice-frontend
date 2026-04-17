@@ -15,10 +15,13 @@ export default function AdminDashboard() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
+  const [username, setUsername] = useState("Admin");
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
+    const storedUsername = localStorage.getItem("username");
 
     if (!token) {
       router.push("/login");
@@ -28,6 +31,10 @@ export default function AdminDashboard() {
     if (role !== "ADMIN") {
       router.push("/dashboard");
       return;
+    }
+
+    if (storedUsername) {
+      setUsername(storedUsername);
     }
 
     loadInvoices();
@@ -102,6 +109,10 @@ export default function AdminDashboard() {
     router.push("/login");
   };
 
+  const toggleInvoiceDetails = (id) => {
+    setExpandedInvoiceId((currentId) => (currentId === id ? null : id));
+  };
+
   const stats = {
     total: invoices.length,
     pending: invoices.filter(inv => inv.status === "PENDING").length,
@@ -135,7 +146,7 @@ export default function AdminDashboard() {
         <main className="flex-1 space-y-8 py-8">
           <div className="space-y-4">
             <div className="inline-flex rounded-full bg-sky-500/15 px-4 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">
-              Admin dashboard
+              Welcome {username}
             </div>
             <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
               Manage all invoices
@@ -209,9 +220,34 @@ export default function AdminDashboard() {
                           <p><span className="font-medium text-slate-300">Email:</span> {inv.businessEmail}</p>
                           <p><span className="font-medium text-slate-300">Amount:</span> ${inv.amount}</p>
                         </div>
+
+                        {expandedInvoiceId === inv.id && (
+                          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                            <h4 className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-300">
+                              Invoice Content
+                            </h4>
+                            <div className="mt-3 grid gap-2 text-sm text-slate-400 sm:grid-cols-2">
+                              <p><span className="font-medium text-slate-300">Invoice Number:</span> {inv.invoiceNumber || "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Amount:</span> ${inv.amount ?? "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Supplier Name:</span> {inv.supplierName || "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Buyer Name:</span> {inv.buyerName || "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Business Email:</span> {inv.businessEmail || "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Status:</span> {inv.status || "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Created:</span> {inv.createdAt ? new Date(inv.createdAt).toLocaleString() : "N/A"}</p>
+                              <p><span className="font-medium text-slate-300">Updated:</span> {inv.updatedAt ? new Date(inv.updatedAt).toLocaleString() : "N/A"}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3 sm:justify-end">
+                        <button
+                          onClick={() => toggleInvoiceDetails(inv.id)}
+                          className="flex-1 rounded-full border border-slate-600 bg-slate-800 px-6 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-700 sm:flex-none"
+                        >
+                          {expandedInvoiceId === inv.id ? "Hide Details" : "View Details"}
+                        </button>
+
                         <button
                           onClick={() => handleApprove(inv.id)}
                           disabled={inv.status !== "PENDING" || processing === inv.id}
